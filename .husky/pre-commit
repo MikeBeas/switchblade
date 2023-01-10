@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npm run lint
+exit $(expr $(git status --porcelain 2>/dev/null| grep "??" | wc -l));
