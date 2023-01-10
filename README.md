@@ -214,6 +214,24 @@ When a user is logged in, you may authenticate any API call by including an `Aut
 
 Any call that behaves differently when authenticated will have the alternate behavior documented. Some calls require authentication.
 
+# Boolean API Filters Values
+
+Some APIs support filters that accept boolean values. To set one of these filters to `true`, you may use an of the following values:
+
+- true
+- 1
+- t
+- yes
+- y
+
+For `false`, you can use any of these values:
+
+- false
+- 0
+- f
+- no
+- n
+
 # Shortcut and Version Objects
 
 ## Shortcut
@@ -274,6 +292,19 @@ The version object is returned in the following shape:
 - `deleted`: Boolean value indicating whether the shortcut has been deleted.
 - `required`: Boolean value indicating whether the shortcut is a required update. The UpdateKit API can return this value to clients checking for updates, and they can use it to determine if they should allow the end user to skip the version or not.
 - `prerelease`: Boolean value indicating whether the shortcut is an alpha/beta/release candidate/other prerelease version. This is determined automatically based on whether the version number contains a `-`.
+
+# Postman Collection
+
+A Postman collection is available in this repo. Import `SwitchbladePostmanCollection.json` to get started. All APIs are documented with descriptions, all available query parameters, body parameters, authorization headers, and more.
+
+To setup the Postman collection, add a new environment to Postman with the following variables:
+
+- `username`: Your Switchblade username.
+- `password`: Your Switchblade password.
+- `token`: This will be populated automatically for you. You can leave it blank.
+- `host`: The domain of your Switchblade server (no trailing slash).
+
+When you use the login endpoint, the tests setup in Postman will automatically save the token from the response into your environment variables for use in other requests.
 
 # Available Endpoints
 
@@ -337,6 +368,11 @@ Requires authentication. Allows the current user to modify their profile informa
 ### `GET /shortcuts`
 Gets a list of all shortcuts available on the service. Deleted shortcuts and shortcuts in the draft state will not be returned. When authenticated, deleted and draft shortcuts are returned along with published shortcuts.
 
+The following parameters can be added to the query string to filter what will be returned.
+
+- `deleted`: Requires authentication. Set to `true` to show only deleted shortcuts. Set to `false` to hide deleted shortcuts. Omit to show all shortcuts.
+- `state`: Requires authentication. Specify the number value for any supported shortcut state, such as `0` for published and `1` for draft, to see only shortcuts in that state. Supports multiple comma-separated values, such as `?state=0,1`.
+
 ### `GET /shortcuts/{shortcutId}`
 Gets the details for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.
 
@@ -360,6 +396,13 @@ Gets a list of all versions available for a particular shortcut. Deleted shortcu
 
 ### `GET /shortcuts/{shortcutId}/history`
 Gets a list of all available versions for a specific shortcut. When unauthenticated, draft and deleted shortcuts/versions will not be included. When authenticated, draft and deleted shortcuts/versions will return as expected.
+
+The following parameters can be added to the query string to filter what will be returned.
+
+- `prerelease`: Set to `true` to see only pre-release versions. Set to `false` to hide pre-release versions. Omit to see all versions.
+- `deleted`: Requires authentication. Set to `true` to show only deleted versions or shortcuts. Set to `false` to hide deleted versions or shortcuts. Omit to show all versions.
+- `state`: Specify the number value for any supported version state, such as `0` for published and `1` for draft, to see only versions in that state. Supports multiple comma-separated values, such as `?state=0,1`.
+- `required`: Set to `true` to see only versions that have been marked as mandatory. Set `false` to exclude mandatory versions. Omit filter to see all versions.
 
 ### `GET /shortcuts/{shortcutId}/version/latest`
 Gets the details for the latest version available for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.

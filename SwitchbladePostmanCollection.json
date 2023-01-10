@@ -1,0 +1,823 @@
+{
+	"info": {
+		"_postman_id": "c79123a3-2ecc-4984-bc1a-1c8976831562",
+		"name": "Switchblade",
+		"description": "Collection of APIs available in Switchblade.\n\nSet up your Postman environment with these variables:\n\n- `username`: Your Switchblade username.\n- `password`: Your Switchblade password.\n- `token`: This will be populated automatically for you. You can leave it blank.\n- `host`: The domain of your Switchblade server (no trailing slash).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Core",
+			"item": [
+				{
+					"name": "Root",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}",
+							"host": [
+								"{{host}}"
+							]
+						},
+						"description": "Returns basic configuration information about the Switchblade API, including the current software version."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Get 200 Response\", () => {",
+									"    pm.response.to.have.status(200);",
+									"})",
+									"",
+									"pm.test(\"Get Token\", () => {",
+									"    pm.expect(pm.response.json()['token']).not.equal(null);",
+									"})",
+									"",
+									"pm.environment.set(\"token\", (pm.response.json()['token']));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						},
+						"description": "Allows a user to authenticate with the API. Returns a JWT. This request will write the JWT into the {{token}} variable for use in other requests so you do not need to manually do so.\n\nRemember to provide your OTP code if your account has MFA enabled."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Get 200 Response\", () => {",
+									"    pm.response.to.have.status(200);",
+									"})",
+									"",
+									"pm.test(\"Request Verified\", () => {",
+									"    pm.expect(pm.response.json()['message']).is.equal(\"verified!\");",
+									"})"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/verify",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"verify"
+							]
+						},
+						"description": "Returns a message indicating if the request is authenticated or not. Useful for testing if a JWT is valid or if a request is setup correctly."
+					},
+					"response": []
+				}
+			],
+			"description": "Core functionality such as the API root, which returns configuration information, and the login API."
+		},
+		{
+			"name": "Setup and Management",
+			"item": [
+				{
+					"name": "Setup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/setup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"setup"
+							]
+						},
+						"description": "Creates an initial admin user in the database with the supplied username and password. Only works if there are zero rows in the `users` table of the database."
+					},
+					"response": []
+				},
+				{
+					"name": "Hash Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/hash-password",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"hash-password"
+							]
+						},
+						"description": "Creates a password hash that can be inserted into the `users` table of the database to update a user's password."
+					},
+					"response": []
+				}
+			],
+			"description": "These APIs are used for setting up and managing Switchblade."
+		},
+		{
+			"name": "Me",
+			"item": [
+				{
+					"name": "Get My Identity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/me",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"me"
+							]
+						},
+						"description": "Gets the identity information of the currently-authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Begin MFA Setup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/me/mfa/setup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"me",
+								"mfa",
+								"setup"
+							]
+						},
+						"description": "Begins the process of enabling MFA for the current user. Returns data that can be used to setup a time-based one-time password in a compatible app."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete MFA Setup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"otp\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/me/mfa/complete",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"me",
+								"mfa",
+								"complete"
+							]
+						},
+						"description": "Submit the current time-based one-time password to this API to confirm that the user's MFA client has been configured correctly. This will enable MFA on the current user's account."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete MFA Configuration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/me/mfa",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"me",
+								"mfa"
+							]
+						},
+						"description": "This API removes the MFA configuration from the current user's account. They will only have to use a username and password to login once this has happened. The user can setup MFA again at any time using the appropriate API call."
+					},
+					"response": []
+				},
+				{
+					"name": "Edit My Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\",\n    \"deleted\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/me",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"me"
+							]
+						},
+						"description": "Edits details of the current user's account, such as username and password."
+					},
+					"response": []
+				}
+			],
+			"description": "These endpoints are used to manage the currently-authenticated user."
+		},
+		{
+			"name": "Shortcuts",
+			"item": [
+				{
+					"name": "Get All Shortcuts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/shortcuts?deleted&state",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts"
+							],
+							"query": [
+								{
+									"key": "deleted",
+									"value": null,
+									"description": "Boolean. Requires authentication. True to show only deleted shortcuts. False to exclude them. Omit filter to see all."
+								},
+								{
+									"key": "state",
+									"value": null,
+									"description": "Number. See README for values. Supports multiple comma-separated values."
+								}
+							]
+						},
+						"description": "Returns a list of all available shortcuts. When authenticated, this list will include drafts and deleted items. Filters can be used with this API to include, exclude, or exclusively get the deleted and draft items."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shortcut",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/shortcuts/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1"
+							]
+						},
+						"description": "Gets the record for a single shortcut. Deleted and draft shortcuts will only be returned when authenticated."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Shortcut",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Shortcut\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/shortcuts",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts"
+							]
+						},
+						"description": "This API allows the current user to create a new shortcut record."
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Shortcut",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Shortcut Name\",\n    \"headline\": \"Your shortcut headline here.\",\n    \"description\": \"Your shortcut description here.\",\n    \"website\": \"https://example.com/my-cool-shortcut\",\n    \"state\": 0,\n    \"deleted\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/shortcuts/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1"
+							]
+						},
+						"description": "Allows editing an existing shortcut record with new metadata."
+					},
+					"response": []
+				}
+			],
+			"description": "APIs related to the shortcut object."
+		},
+		{
+			"name": "Versions",
+			"item": [
+				{
+					"name": "Get Version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/shortcuts/1/version/2.0",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1",
+								"version",
+								"2.0"
+							]
+						},
+						"description": "Gets the record for a single shortcut version."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Version History",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1",
+								"history"
+							],
+							"query": [
+								{
+									"key": "deleted",
+									"value": null,
+									"description": "Boolean. Requires authentication. True to show only deleted versions. False to exclude them. Omit filter to see all."
+								},
+								{
+									"key": "required",
+									"value": null,
+									"description": "Boolean. True to only show mandatory updates. False to exclude them. Omit filter to see all."
+								},
+								{
+									"key": "prerelease",
+									"value": null,
+									"description": "Boolean. True to see only pre-release versions. False to exclude them. Omit filter to see all."
+								},
+								{
+									"key": "state",
+									"value": null,
+									"description": "Number. Supports multiple comma-separated values. See Switchblade README for values."
+								}
+							]
+						},
+						"description": "Returns a list of all available versions for a specific shortcut. When authenticated, this list will include drafts and deleted items. Filters can be used with this API to include, exclude, or exclusively get the deleted and draft items."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Latest Version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/shortcuts/1/version/latest?platform=&platformVersion=&prerelease=",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1",
+								"version",
+								"latest"
+							],
+							"query": [
+								{
+									"key": "platform",
+									"value": "",
+									"description": "\"ios\" or \"mac\". Requires platformVersion to have any effect."
+								},
+								{
+									"key": "platformVersion",
+									"value": "",
+									"description": "Number. Platform system version (i.e., iOS 12.2 would be \"12\")"
+								},
+								{
+									"key": "prerelease",
+									"value": "",
+									"description": "Boolean. True allows pre-release versions to be shown. Set to false or omit to hide pre-release versions."
+								}
+							]
+						},
+						"description": "Gets the latest available version of a shortcut. This will include drafts when authenticated. A filter can be used when authenticated or unauthenticated to include pre-release (alpha, beta, etc.) versions."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"version\": \"1.0\",\n    \"notes\": \"This is the initial release version\",\n    \"url\": \"https://www.icloud.com/shortcuts/1234567890\",\n    \"minimumiOS\": 16,\n    \"minimumMac\": 12,\n    \"date\": \"2023-01-01\",\n    \"required\": true,\n    \"state\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/shortcuts/1/version",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1",
+								"version"
+							]
+						},
+						"description": "This API allows the current user to create a new shortcut version record for a specific shortcut."
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"This is the initial release version, but modified.\",\n    \"url\": \"https://www.icloud.com/shortcuts/0987654321\",\n    \"minimumiOS\": 15,\n    \"minimumMac\": 13,\n    \"date\": \"2023-01-02\",\n    \"required\": false,\n    \"state\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/shortcuts/1/version/1.0.11",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"shortcuts",
+								"1",
+								"version",
+								"1.0.11"
+							]
+						},
+						"description": "Allows editing an existing shortcut record with new metadata."
+					},
+					"response": []
+				}
+			],
+			"description": "APIs related to the shortcut version object."
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
