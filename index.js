@@ -14,6 +14,8 @@ const validateConfiguration = async () => {
   console.log('Welcome to Switchblade')
   console.log(LINE)
   console.log()
+  console.log(LINE)
+
   console.log('Validating database connection...')
   try {
     // validate database config
@@ -32,6 +34,8 @@ const validateConfiguration = async () => {
   }
 
   console.log('Validation passed')
+
+  console.log(LINE)
 };
 
 const app = require('./app/server');
@@ -52,7 +56,7 @@ const boot = async () => {
     console.log()
 
     console.log(LINE)
-    console.log(`Running in ${config.production ? 'production': 'development'} mode`)
+    console.log(`Running in ${config.production ? 'production' : 'development'} mode`)
     console.log(`Switchblade is ready to use`);
     console.log(`Starting ${totalCPUs} workers...`);
     console.log(LINE)
