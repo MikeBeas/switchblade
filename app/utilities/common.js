@@ -5,3 +5,8 @@ module.exports.removeUndefined = (data) => {
 
   return data;
 }
+
+module.exports.cleanString = (str) => {
+  const trimmed = str?.trim();
+  return !trimmed || trimmed === "" ? null : trimmed;
+}

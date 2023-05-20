@@ -7,7 +7,8 @@ const formatUser = (row) => ({
   id: row.user_id,
   username: row.username,
   lastLogin: row.last_login,
-  deleted: row.deleted ? true : false
+  deleted: row.deleted ? true : false,
+  mfaEnabled: row.mfa_enabled ? true : false
 })
 
 const validateUserData = async (userData) => {

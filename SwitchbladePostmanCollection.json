@@ -50,10 +50,12 @@
 									"})",
 									"",
 									"pm.test(\"Get Token\", () => {",
-									"    pm.expect(pm.response.json()['token']).not.equal(null);",
+									"    pm.expect(pm.response.json()['token']).not.equal(null) ||",
+									"    pm.expect(pm.response.json()['mfaToken']).not.equal(null);",
 									"})",
 									"",
-									"pm.environment.set(\"token\", (pm.response.json()['token']));"
+									"if (pm.response.json()['token']) pm.environment.set(\"token\", (pm.response.json()['token']));",
+									"if (pm.response.json()['mfaToken']) pm.environment.set(\"mfaToken\", (pm.response.json()['mfaToken']));"
 								],
 								"type": "text/javascript"
 							}
@@ -77,6 +79,71 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						},
+						"description": "Allows a user to authenticate with the API. Returns a JWT. This request will write the JWT into the {{token}} variable for use in other requests so you do not need to manually do so.\n\nRemember to provide your OTP code if your account has MFA enabled."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (MFA Step)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Get 200 Response\", () => {",
+									"    pm.response.to.have.status(200);",
+									"})",
+									"",
+									"pm.test(\"Get Token\", () => {",
+									"    pm.expect(pm.response.json()['token']).not.equal(null) ||",
+									"})",
+									"",
+									"if (pm.response.json()['token']) pm.environment.set(\"token\", (pm.response.json()['token']));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfaToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"otp\": \"\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -304,6 +371,71 @@
 					"response": []
 				},
 				{
+					"name": "Login (MFA Step) Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Get 200 Response\", () => {",
+									"    pm.response.to.have.status(200);",
+									"})",
+									"",
+									"pm.test(\"Get Token\", () => {",
+									"    pm.expect(pm.response.json()['token']).not.equal(null) ||",
+									"})",
+									"",
+									"if (pm.response.json()['token']) pm.environment.set(\"token\", (pm.response.json()['token']));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mfaToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"otp\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						},
+						"description": "Allows a user to authenticate with the API. Returns a JWT. This request will write the JWT into the {{token}} variable for use in other requests so you do not need to manually do so.\n\nRemember to provide your OTP code if your account has MFA enabled."
+					},
+					"response": []
+				},
+				{
 					"name": "Complete MFA Setup",
 					"event": [
 						{
@@ -391,7 +523,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\",\n    \"deleted\": false\n}",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -434,7 +566,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts?deleted&state",
+							"raw": "{{host}}/shortcuts?deleted&state&search",
 							"host": [
 								"{{host}}"
 							],
@@ -451,6 +583,11 @@
 									"key": "state",
 									"value": null,
 									"description": "Number. See README for values. Supports multiple comma-separated values."
+								},
+								{
+									"key": "search",
+									"value": null,
+									"description": "String. Filter shortcuts by shortcut name, headline, and description."
 								}
 							]
 						},
@@ -620,7 +757,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state",
+							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state&search",
 							"host": [
 								"{{host}}"
 							],
@@ -649,6 +786,11 @@
 									"key": "state",
 									"value": null,
 									"description": "Number. Supports multiple comma-separated values. See Switchblade README for values."
+								},
+								{
+									"key": "search",
+									"value": null,
+									"description": "String. Filters versions by version number, change log, and download URL."
 								}
 							]
 						},

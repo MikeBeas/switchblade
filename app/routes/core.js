@@ -9,10 +9,15 @@ module.exports = (app) => {
     api: {
       host: req.headers.host,
       production: sys.production,
-      authenticated: await security.isAuthorized(req, res)
+      authenticated: await security.isAuthorized(req)
     },
     switchblade: {
       version: sys.version
+    },
+    features: {
+      MULTI_STEP_MFA: true,
+      SHORTCUT_KEYWORD_SEARCH: true,
+      VERSION_KEYWORD_SEARCH: true
     }
   }));
 

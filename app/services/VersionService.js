@@ -1,6 +1,6 @@
 const { VERSION_STATUS, VERSION_STATUS_LABELS, FILTER_BOOL, PLATFORMS, SHORTCUT_STATUS, VERSION_DEFAULTS } = require('../constants');
 const { format, query } = require('../database/query');
-const { removeUndefined } = require('../utilities/common');
+const { removeUndefined, cleanString } = require('../utilities/common');
 
 module.exports.formatVersion = (row = {}) => ({
   version: row.version_number,
@@ -17,6 +17,16 @@ module.exports.formatVersion = (row = {}) => ({
   required: row.version_required ? true : false,
   prerelease: row.version_is_prerelease ? true : false
 });
+
+const checkMinimumSystem = (systemValue) => {
+  // if null or an empty string is submitted, clear the value from the database
+  if (systemValue === null || systemValue === "") return null;
+
+  // don't overwrite if a non-numeric value is entered
+  if (Number.isNaN(systemValue)) return undefined;
+
+  return systemValue;
+}
 
 const validateVersionData = (versionData = {}, updating = false) => {
   const data = updating ?
@@ -50,11 +60,11 @@ const validateVersionData = (versionData = {}, updating = false) => {
 
   const returnData = {
     ...validated,
-    release_notes: data.notes?.trim(),
-    download_url: data.url?.trim(),
-    minimum_ios_version: Object.keys(data).includes('minimumiOS') ? data.minimumiOS : undefined,
-    minimum_mac_version: Object.keys(data).includes('minimumMac') ? data.minimumMac : undefined,
-    release_date: data.date?.trim(),
+    release_notes: Object.keys(data).includes('notes') ? cleanString(data.notes?.trim()) : undefined,
+    download_url: Object.keys(data).includes('url') ? cleanString(data.url?.trim()) : undefined,
+    minimum_ios_version: Object.keys(data).includes('minimumiOS') ? checkMinimumSystem(data.minimumiOS) : undefined,
+    minimum_mac_version: Object.keys(data).includes('minimumMac') ? checkMinimumSystem(data.minimumMac) : undefined,
+    release_date: Object.keys(data).includes('date') ? cleanString(data.date?.trim()) : undefined,
     version_state: Object.keys(data).includes('state') ? Number(data.state) : undefined,
     version_deleted: Object.keys(data).includes('deleted') ? (data.deleted ? true : false) : undefined,
     version_required: Object.keys(data).includes('required') ? (data.required ? true : false) : undefined
@@ -141,7 +151,7 @@ module.exports.getHistory = async (shortcutId, authenticated = false, filters = 
   if (stateFilter && stateFilter.length > 0) {
     const allowedItems = [];
     for (const stateFilterItem of stateFilter) {
-      if (Object.values(VERSION_STATUS).includes(Number(stateFilterItem))) {
+      if (stateFilterItem !== "" && Object.values(VERSION_STATUS).includes(Number(stateFilterItem))) {
         allowedItems.push(stateFilterItem)
       }
     }
@@ -150,6 +160,12 @@ module.exports.getHistory = async (shortcutId, authenticated = false, filters = 
       queryFilters.push("version_state IN (:states:)");
       filterValues.states = allowedItems;
     }
+  }
+
+  if (filters?.search && filters?.search?.trim() !== "") {
+    filterValues.search = `%${filters.search}%`;
+
+    queryFilters.push(`(version_number LIKE :search: OR release_notes LIKE :search: OR download_url LIKE :search:)`);
   }
 
   const filterString = queryFilters.length > 0 ? `AND ${queryFilters.join(" AND ")}` : '';

@@ -2,13 +2,24 @@
 
 A self-hosted Apple Shortcuts distribution system.
 
+You can find the changelog here: https://github.com/MikeBeas/switchblade/blob/master/changelog.md
+
+# User Interface and Dev Tools
+
 Switchblade is provided as a "headless" system, which means it does not come with a UI out of the box. You can easily use the API with apps like [Postman](https://www.postman.com/downloads/) and [Insomnia](https://insomnia.rest/download), but thanks to the open and documented API, anyone can build a UI for Switchblade.
 
-It is possible that in the future I will provide a front end for Switchblade, but at this time I am providing it as a backend-only service. Developers who want to create front ends for this software (admin panels, product pages, etc.) can do so as they see fit. Front ends may be distributed any way the creator chooses.
+Developers who want to create front ends for this software (admin panels, product pages, etc.) can do so as they see fit. Front ends may be distributed any way the creator chooses.
 
-The design of Switchblade means that users who want to build sites that use it can easily swap out front ends whenever they want, almost like WordPress themes, and be confident that the backend infrastructure remains intact. Shortcut makers can also easily integrate data from Switchblade into own websites via the API.
+## Switchblade UI
+I have also released a separate front end application called [Switchblade UI](https://github.com/MikeBeas/switchblade-ui) that you are free to use if you'd like, or you can build your own or use one developed by another creator. You can run it anywhere you can run a React app.
 
-The front end and back end systems can run completely separately. Your front end only needs to know the domain of your Switchblade API (environment variables are recommended for this) and it will be able to reach it from anywhere. So, for example, you could run both your front end and back end on DigitalOcean, or run your back end on Heroku and your front end on Netlify. You could even build a shortcut that uses the Switchblade API to manage your shortcuts. The choice is yours.
+The design of Switchblade means that users who want to build sites that use it can easily swap out front ends whenever they want, almost like WordPress themes, and be confident that the backend infrastructure remains intact. Shortcut makers can also easily integrate data from Switchblade into their own websites via the API.
+
+## Switchblade SDK
+
+Developers who are interested in building UIs, or shortcut creators who would like to integrate Switchblade API calls into their own websites, can use the [Switchblade SDK](https://github.com/MikeBeas/switchblade-sdk), a JavaScript/TypeScript package that provides an easy interface for making these calls.
+
+Since the front end and back end systems can run completely separately, your front end only needs to know the domain of your Switchblade API (environment variables are recommended for this) and it will be able to reach it from anywhere. So, for example, you could run both your front end and back end on DigitalOcean, or run your back end on Heroku and your front end on Netlify. You could even build a shortcut that uses the Switchblade API to manage your shortcuts. The choice is yours.
 
 # Table of Contents
 
@@ -185,7 +196,7 @@ No recovery codes are generated when MFA is setup. Given that the primary use ca
 
 # Authenticating with Switchblade
 
-To log a user in, make a `POST` call to the `/login` API endpoint. Use the following values for the body:
+To log a user in, make a `POST` call to the `POST /login` API endpoint. Use the following values for the body:
 
 ```json
 {
@@ -194,7 +205,7 @@ To log a user in, make a `POST` call to the `/login` API endpoint. Use the follo
 }
 ```
 
-If logging in as a user with multi-factor authentication enabled, you must also include a your one-time password as shown:
+If logging in as a user with multi-factor authentication enabled, you can also include a your one-time password as shown:
 
 ```json
 {
@@ -204,15 +215,55 @@ If logging in as a user with multi-factor authentication enabled, you must also 
 }
 ```
 
-If a user with MFA enabled attempts to login without providing the MFA code, the request will be rejected with an error message. It is recommended if you are building a Switchblade login form that you provide an optional MFA field alongside the username and password fields so that the user can enter all of this information at the same time.
+In Switchblade version 1.0.0, if a user with MFA enabled attempts to login without providing the MFA code, the request will be rejected with an error message. It is recommended if you are building a Switchblade login form that you provide an optional MFA field alongside the username and password fields so that the user can enter all of this information at the same time.
 
-If successful, the API will respond with a JSON Web Token (JWT) that identifies the user to the server. This token will be required for any authenticated API calls.
+In later versions of Switchblade, you can perform an MFA-enabled login as a two-step process. This flow works as follows:
+
+First, submit the username and password to the login endpoint:
+
+```json
+{
+  "username": "USERNAME_HERE",
+  "password": "PASSWORD_HERE"
+}
+```
+
+You will get back a response in the following format:
+
+```json
+{
+  "mfaRequired": true,
+  "mfaToken": "A_JWT_HERE"
+}
+```
+
+When `mfaRequired` is true in the response, you can use the `mfaToken` to complete the login. Submit another call to the `/login` endpoint with an `Authorization: Bearer MFA_TOKEN_HERE` header, and the OTP value in the body:
+
+```json
+{
+  "otp": "OTP_HERE"
+}
+```
+
+The multi-step MFA flow has [feature flag](#feature-flags) of `MULTI_STEP_MFA`.
+
+Upon a successful login through either of these paths, the API will respond with a JSON Web Token (JWT) that identifies the user to the server. This token will be required for any authenticated API calls.
 
 The JWT will eventually expire (see the section on [environment variables](#other-environment-variables) for information on setting how long they take to expire) and need to be replaced by logging in again. Any API request that requires authentication will respond with a `401` HTTP status and a message indicating that the user is not logged in.
 
 When a user is logged in, you may authenticate any API call by including an `Authorization` header on the request with a value of `Bearer {token}` where `{token}` is the user's JWT (do not include the braces `{}`).
 
 Any call that behaves differently when authenticated will have the alternate behavior documented. Some calls require authentication.
+
+# Feature Flags
+
+After Switchblade's initial launch, new features may be added from time to time that require changes the API, such as the addition of new endpoints. You can check for the availability of these features on the server from your frontend by making a request to the `GET /` endpoint and checking the `features` for the relevant flag.
+
+`features` is a key/value list of advanced features supported by the current version of Switchblade. The value for all enabled features will be `true`.
+
+## Current Feature Flags
+
+- `MULTI_STEP_MFA`: The multi-step MFA flow described in the section on [authenticating with the Switchblade API](#authenticating-with-switchblade) is available. It is recommended that when this feature is available, you only surface the MFA field if necessary. For versions without this feature, surface the MFA field for all users on the login screen.
 
 # Boolean API Filters Values
 
@@ -341,7 +392,7 @@ This endpoint can be used to validate authentication. It will return a success m
 
 ## Current User Account
 
-### `GET /me`:
+### `GET /me`
 Requires authentication. Gets basic information about the current user's identity, including their user ID, username, and last login timestamp.
 
 ### `POST /me/mfa/setup`
@@ -372,6 +423,7 @@ The following parameters can be added to the query string to filter what will be
 
 - `deleted`: Requires authentication. Set to `true` to show only deleted shortcuts. Set to `false` to hide deleted shortcuts. Omit to show all shortcuts.
 - `state`: Requires authentication. Specify the number value for any supported shortcut state, such as `0` for published and `1` for draft, to see only shortcuts in that state. Supports multiple comma-separated values, such as `?state=0,1`.
+- `search`: Searches the full text of the shortcut name, headline, and description fields to find matches. This requires Switchblade 1.1.0 or newer and can be detected using the `SHORTCUT_KEYWORD_SEARCH` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}`
 Gets the details for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.
@@ -403,6 +455,7 @@ The following parameters can be added to the query string to filter what will be
 - `deleted`: Requires authentication. Set to `true` to show only deleted versions or shortcuts. Set to `false` to hide deleted versions or shortcuts. Omit to show all versions.
 - `state`: Specify the number value for any supported version state, such as `0` for published and `1` for draft, to see only versions in that state. Supports multiple comma-separated values, such as `?state=0,1`.
 - `required`: Set to `true` to see only versions that have been marked as mandatory. Set `false` to exclude mandatory versions. Omit filter to see all versions.
+- `search`: Searches the full text of the version number, release notes, and download URL fields to find matches. This requires Switchblade 1.1.0 or newer and can be detected using the `VERSION_KEYWORD_SEARCH` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}/version/latest`
 Gets the details for the latest version available for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.

@@ -8,6 +8,7 @@ const { query } = require('../database/query');
 const TOKEN_HEADER_PREFIX = "Bearer ";
 
 const calculateTimeout = () => (Date.now() / 1000) + (process.env.JWT_TIMEOUT_IN_SECONDS ?? 3600);
+const calculateMfaTimeout = () => (Date.now() / 1000) + (45);
 
 const userIsDeleted = async (userId) => {
   const user = await query(`SELECT user_deleted FROM users where user_id = :userId:`, { userId }, { returnFirst: true });
@@ -17,11 +18,58 @@ const userIsDeleted = async (userId) => {
 module.exports.encrypt = (value) => encryption.encrypt(value)
 module.exports.decrypt = (value) => encryption.decrypt(value)
 
-module.exports.login = async (req) => {
-  const { body: { username, password, otp }, headers: { host } } = req;
+const validateMfa = async (req, username) => {
+  const { body: { otp } } = req;
 
-  if (!username || !password) {
+  const user = await query("SELECT user_id, username, password_hash, otp_secret, mfa_enabled FROM users WHERE username = :username: AND user_deleted = FALSE", { username }, { returnFirst: true });
+
+  const decryptedSecret = this.decrypt(user.otp_secret);
+
+  try {
+    const valid = authenticator.check(otp, decryptedSecret);
+    if (!valid) throw new Error(AUTH.LOGIN_FAILED);
+  } catch (e) {
+    console.log()
+    console.log(LINE)
+    console.log('MFA secret decryption failed.\nIf your encryption key recently changed, you may need to disable MFA for all users and have them re-enable it.')
+    console.log(LINE)
+    console.log()
+    throw new Error('Failed to decrypt MFA secret. Please contact your Switchblade administrator.')
+  }
+}
+
+module.exports.loginWithMfa = async (req) => {
+  try {
+    if (!await this.isAuthorized(req, "mfa")) {
+      throw new Error(AUTH.LOGIN_FAILED);
+    }
+
+    const { headers: { host } } = req;
+    const { username } = this.getUserFromToken(req);
+    await validateMfa(req, username);
+
+
+    const user = await query("SELECT user_id, username, password_hash, otp_secret, mfa_enabled FROM users WHERE username = :username: AND user_deleted = FALSE", { username }, { returnFirst: true });
+
+    const token = issueToken(user, host)
+    return { token }
+  } catch {
+    throw new Error(AUTH.LOGIN_FAILED)
+  }
+}
+
+module.exports.login = async (req) => {
+  const {
+    body: { username, password, otp },
+    headers: { host, authorization }
+  } = req;
+
+  if ((!username || !password) && !authorization) {
     throw new Error("Username and password are required.");
+  }
+
+  if (authorization) {
+    return this.loginWithMfa(req)
   }
 
   const user = await query("SELECT user_id, username, password_hash, otp_secret, mfa_enabled FROM users WHERE username = :username: AND user_deleted = FALSE", { username }, { returnFirst: true });
@@ -39,21 +87,14 @@ module.exports.login = async (req) => {
 
   if (user.mfa_enabled) {
     if (!otp || otp.trim() === "") {
-      throw new Error("Security code is required.");
+      const mfaToken = issueMfaToken(user, host)
+      return { mfaRequired: true, mfaToken }
     }
 
-    const decryptedSecret = this.decrypt(user.otp_secret);
-
     try {
-      const valid = authenticator.check(otp, decryptedSecret);
-      if (!valid) throw new Error(AUTH.LOGIN_FAILED);
-    } catch (e) {
-      console.log()
-      console.log(LINE)
-      console.log('MFA secret decryption failed.\nIf your encryption key recently changed, you may need to disable MFA for all users and have them re-enable it.')
-      console.log(LINE)
-      console.log()
-      throw new Error('Failed to decrypt MFA secret. Please contact your Switchblade administrator.')
+      await validateMfa(req, username)
+    } catch {
+      throw new Error(AUTH.LOGIN_FAILED)
     }
   }
 
@@ -61,7 +102,7 @@ module.exports.login = async (req) => {
 
   // no need to await this
   query("UPDATE users SET last_login = NOW() WHERE username = :username:", { username });
-  return token;
+  return { token };
 }
 
 const issueToken = (user, host) => {
@@ -71,6 +112,7 @@ const issueToken = (user, host) => {
     "iat": Math.floor(Date.now() / 1000),
     "nbf": Math.floor(Date.now() / 1000),
     "exp": Math.floor(calculateTimeout()),
+    "type": "auth",
     "data": {
       "id": user.user_id,
       "username": user.username
@@ -80,7 +122,24 @@ const issueToken = (user, host) => {
   return tokenHandler.sign(tokenData, process.env.JWT_KEY, { algorithm: process.env.JWT_ALGO ?? 'HS256' })
 }
 
-module.exports.isAuthorized = async (req) => {
+const issueMfaToken = (user, host) => {
+  const tokenData = {
+    "iss": host,
+    "aud": host,
+    "iat": Math.floor(Date.now() / 1000),
+    "nbf": Math.floor(Date.now() / 1000),
+    "exp": Math.floor(calculateMfaTimeout()),
+    "type": "mfa",
+    "data": {
+      "id": user.user_id,
+      "username": user.username
+    }
+  }
+
+  return tokenHandler.sign(tokenData, process.env.JWT_KEY, { algorithm: process.env.JWT_ALGO ?? 'HS256' })
+}
+
+module.exports.isAuthorized = async (req, tokenType = "auth") => {
   if (!req) return false;
   const auth = req.headers.authorization;
   if (!auth) return false;
@@ -89,10 +148,16 @@ module.exports.isAuthorized = async (req) => {
 
     try {
       const tokenData = tokenHandler.verify(token, process.env.JWT_KEY);
+
+      if (!tokenData.type || tokenData.type !== tokenType) {
+        throw new Error("Wrong token type");
+      }
+
       if (tokenData?.data?.id) {
         return !await userIsDeleted(tokenData.data.id);
       }
-    } catch {
+    } catch (e) {
+      console.log(e)
       return false;
     }
   } else {

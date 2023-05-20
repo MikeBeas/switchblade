@@ -6,13 +6,13 @@ module.exports.setup = async (req, res) => {
   const foundUsers = await query(`SELECT user_id FROM users LIMIT 1`);
 
   if (foundUsers.length > 0) {
-    return res.status(HTTP.BAD_REQUEST).send({ message: 'Switchblade has already been setup. You cannot run the setup again.' })
+    return res.status(HTTP.BAD_REQUEST).send({ message: 'Switchblade has already been setup. You cannot run the setup again.', success: false })
   }
 
   const { username, password } = req.body;
 
   if (!username || username.trim() === "" || !password || password.trim() === "") {
-    return res.status(HTTP.BAD_REQUEST).send({ message: 'You must specify a username and password' })
+    return res.status(HTTP.BAD_REQUEST).send({ message: 'You must specify a username and password', success: false })
   }
 
   const password_hash = await hashPassword(password);
@@ -21,7 +21,7 @@ module.exports.setup = async (req, res) => {
 
   const result = await query(sql);
 
-  return res.send({ message: `A new user with username "${username}" was created. The user ID is ${result.insertId}. You have setup your Switchblade server. This API will no longer be available.` })
+  return res.send({ message: `A new user with username "${username}" was created. The user ID is ${result.insertId}. You have setup your Switchblade server. This function will no longer be available.`, success: true })
 }
 
 module.exports.generatePasswordHash = async (req, res) => {

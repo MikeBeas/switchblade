@@ -4,8 +4,8 @@ const { HTTP } = require('../constants');
 
 module.exports.login = async (req, res) => {
   try {
-    const token = await SecurityService.login(req);
-    return res.send({ token });
+    const response = await SecurityService.login(req);
+    return res.send(response);
   } catch (e) {
     return res.status(HTTP.NOT_AUTHORIZED).send({ message: e.message });
   }
@@ -55,9 +55,9 @@ module.exports.completeMfaSetup = async (req, res) => {
 
   try {
     await UserService.completeMfaSetup(tokenData.id, req.body);
-    return res.send({ message: 'MFA has been setup for your account. If you lose access to your MFA device, the owner of the Switchblade database can remove your MFA configuration manually.' });
+    return res.send({ success: true, message: 'MFA has been setup for your account. If you lose access to your MFA device, the owner of the Switchblade database can remove your MFA configuration manually.' });
   } catch (e) {
-    return res.status(HTTP.BAD_REQUEST).send({ message: e.message });
+    return res.status(HTTP.BAD_REQUEST).send({ success: false, message: e.message });
   }
 }
 

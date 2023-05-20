@@ -1,6 +1,6 @@
 const { SHORTCUT_STATUS, SHORTCUT_STATUS_LABELS, FILTER_BOOL, SHORTCUT_DEFAULTS } = require('../constants');
 const { format, query } = require('../database/query');
-const { removeUndefined } = require('../utilities/common');
+const { removeUndefined, cleanString } = require('../utilities/common');
 
 module.exports.formatShortcut = (row = {}) => ({
   id: row.shortcut_id,
@@ -35,10 +35,10 @@ const validateShortcutData = (shortcutData = {}, updating = false) => {
   }
 
   const returnData = {
-    shortcut_name: data.name?.trim(),
-    shortcut_headline: data.headline?.trim(),
-    shortcut_description: data.description?.trim(),
-    shortcut_website: data.website?.trim(),
+    shortcut_name: Object.keys(data).includes('name') ? cleanString(data.name) : undefined,
+    shortcut_headline: Object.keys(data).includes('headline') ? cleanString(data.headline) : undefined,
+    shortcut_description: Object.keys(data).includes('description') ? cleanString(data.description) : undefined,
+    shortcut_website: Object.keys(data).includes('state') ? cleanString(data.website) : undefined,
     shortcut_state: Object.keys(data).includes('state') ? Number(data.state) : undefined,
     shortcut_deleted: Object.keys(data).includes('deleted') ? (data.deleted ? true : false) : undefined
   }
@@ -81,7 +81,7 @@ module.exports.getAllShortcuts = async (authenticated = false, filters = {}) => 
   if (stateFilter && stateFilter.length > 0) {
     const allowedItems = [];
     for (const stateFilterItem of stateFilter) {
-      if (Object.values(SHORTCUT_STATUS).includes(Number(stateFilterItem))) {
+      if (stateFilterItem !== "" && Object.values(SHORTCUT_STATUS).includes(Number(stateFilterItem))) {
         allowedItems.push(stateFilterItem)
       }
     }
@@ -90,6 +90,12 @@ module.exports.getAllShortcuts = async (authenticated = false, filters = {}) => 
       queryFilters.push("shortcut_state IN (:states:)");
       filterValues.states = allowedItems;
     }
+  }
+
+  if (filters?.search && filters?.search?.trim() !== "") {
+    filterValues.search = `%${filters.search}%`;
+
+    queryFilters.push(`(shortcut_name LIKE :search: OR shortcut_headline LIKE :search: OR shortcut_description LIKE :search:)`);
   }
 
   const filterString = queryFilters.length > 0 ? `WHERE ${queryFilters.join(" AND ")}` : '';
