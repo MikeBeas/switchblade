@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1.0 (TBD)
+## v1.1.0 (2023-05-20)
 
 This release is accompanied by the release of the [Switchblade SDK](https://github.com/MikeBeas/switchblade-sdk), a JavaScript/TypeScript package that makes it easy to interact with Switchblade servers.
 
