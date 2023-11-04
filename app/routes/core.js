@@ -1,25 +1,9 @@
-const sys = require('../../config/sys');
-const security = require('../services/SecurityService');
 const SystemController = require('../controllers/SystemController');
-const UserController = require('../controllers/UserController');
+const UserController = require('../controllers/MeController');
 const auth = require('../middleware/auth');
 
 module.exports = (app) => {
-  app.get("/", async (req, res) => res.send({
-    api: {
-      host: req.headers.host,
-      production: sys.production,
-      authenticated: await security.isAuthorized(req)
-    },
-    switchblade: {
-      version: sys.version
-    },
-    features: {
-      MULTI_STEP_MFA: true,
-      SHORTCUT_KEYWORD_SEARCH: true,
-      VERSION_KEYWORD_SEARCH: true
-    }
-  }));
+  app.get("/", SystemController.getRoot);
 
   app.post("/login", UserController.login);
   app.get("/verify", auth, UserController.verify);

@@ -34,8 +34,8 @@ Use the table of contents button in the upper left corner of the README header o
   - In order to be as compatible as possible with different deployment systems, Switchblade does not assume that you have, or can have, a database running locally on the same machine as the main application.
   - The database schema will be created and managed by Switchblade, so there is no need to populate any tables in advance.
   - The database can be hosted anywhere you want as long as it is secure and accessible from your Node runtime.
-- Node v19
-  - Switchblade is built on the latest version of Node. It may be compatible with older versions, but when given the option to choose your version, go with version 19+ to ensure maximum compatibility.
+- Node v20
+  - Switchblade is built on the latest version of Node. It may be compatible with older versions, but when given the option to choose your version, go with version 20+ to ensure maximum compatibility.
   - There are many platform-as-a-service (PAAS) providers allow you to deploy a Node application. Switchblade has been tested successfully on Heroku but should run anywhere Node is available.
 
 ## Installation
@@ -153,7 +153,7 @@ If you see the server information when hitting this endpoint, you can setup your
 }
 ```
 
-Be sure to use a strong password (a password generator is recommended). This call will immediately create a new user in your database with the selected username and password. Note that usernames are limit to 50 characters.
+Be sure to use a strong password (a password generator is recommended). This call will immediately create a new user in your database with the selected username and password. Note that usernames are limited to 50 characters.
 
 As long as there are rows in the `users` table of your database, this API will not do anything and will return an error if anyone tries to use it again. Do not delete rows from your `users` table to prevent abuse of this API.
 
@@ -265,6 +265,14 @@ After Switchblade's initial launch, new features may be added from time to time 
 
 - `MULTI_STEP_MFA`: The multi-step MFA flow described in the section on [authenticating with the Switchblade API](#authenticating-with-switchblade) is available. It is recommended that when this feature is available, you only surface the MFA field if necessary. For versions without this feature, surface the MFA field for all users on the login screen.
 
+- `SHORTCUT_KEYWORD_SEARCH`: When this feature flag is present, the `search` parameter is supported on the [shortcut search API](#get-shortcuts`).
+
+- `VERSION_KEYWORD_SEARCH`: When this feature flag is present, the `search` parameter is supported on the [version search API](#get-shortcuts/shortcutid/history`).
+
+- `USER_PERMISSIONS`: Indicates the availability of the [user permissions system](#user-permissions). This also indicates that related [user endpoints](#users) endpoints are available.
+
+- `CREATOR_ID_FILTER`: This flag indicates that the [shortcut](#get-/shortcuts) and [version](#get-/shortcuts/{shortcutId}/history) search endpoints allow you to filter by `creatorId`.
+
 # Boolean API Filters Values
 
 Some APIs support filters that accept boolean values. To set one of these filters to `true`, you may use an of the following values:
@@ -283,7 +291,7 @@ For `false`, you can use any of these values:
 - no
 - n
 
-# Shortcut and Version Objects
+# Common Objects
 
 ## Shortcut
 
@@ -344,6 +352,39 @@ The version object is returned in the following shape:
 - `required`: Boolean value indicating whether the shortcut is a required update. The UpdateKit API can return this value to clients checking for updates, and they can use it to determine if they should allow the end user to skip the version or not.
 - `prerelease`: Boolean value indicating whether the shortcut is an alpha/beta/release candidate/other prerelease version. This is determined automatically based on whether the version number contains a `-`.
 
+## User
+```json
+{
+  "id": 1,
+  "username": "Mike",
+  "isOwner": true,
+  "lastLogin": "2023-09-07T02:54:46.000Z",
+  "deleted": false,
+  "created": "2023-01-04T23:55:01.000Z",
+  "creator": {
+    "id": null,
+    "username": null
+  },
+  "permissions": {
+    "createUsers": true,
+    "modifyUsers": true,
+    "createShortcuts": true,
+    "modifyAnyShortcut": true,
+    "createVersionForAnyShortcut": true,
+    "modifyVersionForAnyShortcut": true
+  }
+}
+```
+
+- `id`: The user's ID in the database.
+- `username`: The user's login username.
+- `isOwner`: Boolean value indicating whether the user is the owner of the current server. Owners will always have access to all permissions.
+- `lastLogin`: Timestamp of the last time the user authenticated with the Switchblade server.
+- `deleted`: Boolean value indicating whether or not the user is deleted.
+- `created`: The timestamp of the user's initial creation in the database.
+- `creator`: An object containing the `id` and `username` of the user who created the user in question.
+- `permissions`: A flat list of the user's current permissions as key/value pairs.
+
 # Postman Collection
 
 A Postman collection is available in this repo. Import `SwitchbladePostmanCollection.json` to get started. All APIs are documented with descriptions, all available query parameters, body parameters, authorization headers, and more.
@@ -356,6 +397,33 @@ To setup the Postman collection, add a new environment to Postman with the follo
 - `host`: The domain of your Switchblade server (no trailing slash).
 
 When you use the login endpoint, the tests setup in Postman will automatically save the token from the response into your environment variables for use in other requests.
+
+# User Permissions
+
+## About Permissions
+
+Starting with Switchblade 1.2.0, a user permissions system allows Switchblade server owners to control what actions other users on the server can perform, from updating shortcuts and versions they didn't create to managing other users in the system.
+
+Users who have permission to manage other users will be able to set the permissions of those users. However, to prevent privilege escalation attacks, a user cannot grant permissions they themselves do not already have to any other user.
+
+When authenticated with Switchblade, the `user` object on the `GET /` endpoint will include a flat list of permissions as key/value pairs. Separately, the endpoint will also include a `permissions` array at the top level, which contains the full list of available permissions, including labels and default values. The permissions in this array are grouped by category.
+
+You can use the `permissions` list to drive the display of toggles in your UI's permission-management system. This will allow your UI to always have all available permissions even if the Switchblade server has been updated with new ones that weren't available when your UI was built. You will not need to update your UI for each new permission that gets added.
+
+Initial support for multi-user support and the permissions system is denoted by the `USER_PERMISSIONS` [feature flag](#feature-flags).
+
+## Available Permissions
+
+- `viewAnyDraftShortcut`: Users with this permission can see unpublished draft shortcuts they do not own. This is useful for moderators or collaborators. This permission also considered deleted shortcuts as "drafts" so any user with this permission will be able to see deleted shortcuts even if they do not own them. Users cannot modify draft shortcuts if they cannot see them.
+- `viewDraftVersionsForAnyShortcut`: Users with this permission can see unpublished draft versions of shortcuts they do not own. Moderators or collaborators can use this to manage drafts of other users' shortcuts. This permission also considered deleted versions as "drafts" so any user with this permission will be able to see deleted versions even if they do not own the shortcut. Users cannot modify draft versions if they cannot see them.
+- `viewUsers`: Users with this permission can populate the list of other users in the system along with their metadata, such as last login timestamp, deleted status, and permissions.
+  - Note: This permission does not affect the user autocomplete endpoint since it does not list any data that is not public; it will only affect endpoints that list all of the user's metadata.
+- `createUsers`: Users with this permission can add additional users to the system. This permission alone does not allow modification of other users, only their creation.
+- `modifyUsers`: Users with this permission can modify existing users. This permission alone does not allow them to create users. This includes the ability to delete users.
+- `createShortcuts`: Users with this permission can add new shortcuts. Users can always modify shortcuts they created.
+- `modifyAnyShortcut`: Users with this permission can modify shortcuts *created by other users*. Users do not require any special permissions to modify their own created shortcuts. This permission is suitable for moderators or collaborators, and includes the ability to mark a shortcut as a draft, published, or deleted.
+- `createVersionForAnyShortcut`: Users with this permission can add versions to shortcuts they did not create. Users can always add versions to shortcuts that they created.
+- `modifyVersionForAnyShortcut`: Users with this permission can modify any version of any shortcut in the system. No special permission is needed to modify versions on a user's own shortcuts.
 
 # Available Endpoints
 
@@ -414,6 +482,33 @@ Requires authentication. Allows the current user to modify their profile informa
 }
 ```
 
+## Users
+
+The Users APIs require Switchblade 1.2.0 or higher and can be detected using the `USER_PERMISSIONS` [feature flag](#feature-flags).
+
+### `GET /users`
+Requires authentication. Gets a list of all users. By default all users are returned.
+
+The following parameters can be added to the query string to filter what will be returned.
+
+- `deleted`: Set to `true` to show only deleted users. Set to `false` to hide deleted users. Omit to show all users.
+- `search`: Searches the username to find matches.
+
+### `GET /users/{userId}`
+Requires authentication. Gets the details for a specific user.
+
+### `POST /users`
+Requires authentication. Creates a new user. The following parameters are available in the request body.
+
+- `username`: Required. The name of the shortcut. This value must be unique. Two users cannot have the same username.
+- `password`: Required. This will set the initial password for the user. The user can change this password after logging into the app.
+- `deleted`: Optional. Allows you to set a user to the deleted state upon creation, if you need that for some reason.
+- `permissions`: Optional. This will overwrite the permissions for this user with the submitted value. You should submit the full permissions list as a key/value pair. Do not submit a delta, the entire object must be included. Any permissions not included will be set to their default values. You can only assign permissions to a user that you yourself already have. Any other permissions you submit will be ignored.
+
+### `PATCH /users/{userId}`
+Allows you to modify an existing user. You can modify an of the parameters used in the [create user endpoint](#post-users).
+
+
 ## Shortcuts
 
 ### `GET /shortcuts`
@@ -424,6 +519,7 @@ The following parameters can be added to the query string to filter what will be
 - `deleted`: Requires authentication. Set to `true` to show only deleted shortcuts. Set to `false` to hide deleted shortcuts. Omit to show all shortcuts.
 - `state`: Requires authentication. Specify the number value for any supported shortcut state, such as `0` for published and `1` for draft, to see only shortcuts in that state. Supports multiple comma-separated values, such as `?state=0,1`.
 - `search`: Searches the full text of the shortcut name, headline, and description fields to find matches. This requires Switchblade 1.1.0 or newer and can be detected using the `SHORTCUT_KEYWORD_SEARCH` [feature flag](#feature-flags).
+- `creatorId`: Limits returned shortcuts to those created by the specified user. This requires Switchblade 1.2.0 or newer and can be detected using the `CREATOR_ID_FILTER` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}`
 Gets the details for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.
@@ -435,7 +531,7 @@ Requires authentication. Creates a new shortcut record. The following parameters
 - `headline`: Optional. The description of your shortcut. Character limit is 255 characters.
 - `description`: Optional. The description of your shortcut. Character limit is 65,535 characters. You should be mindful of the fact that the longer this is, the longer it will take for your users to download and the more strain it will place on your system.
 - `state`: Optional. Allows you to set the state of the shortcut at creation time. See the [shortcut object details](#shortcut) for available options. Use the desired number value, such as 0 or 1.
-- `deleted`: Optional. Allows you to set a shortcut to the deleted state upon creation. If you need that for some reason.
+- `deleted`: Optional. Allows you to set a shortcut to the deleted state upon creation, if you need that for some reason.
 
 ### `PATCH /shortcuts/{shortcutId}`
 Allows you to modify an existing shortcut. You can modify an of the parameters used in the [create shortcut endpoint](#post-shortcuts).
@@ -456,6 +552,7 @@ The following parameters can be added to the query string to filter what will be
 - `state`: Specify the number value for any supported version state, such as `0` for published and `1` for draft, to see only versions in that state. Supports multiple comma-separated values, such as `?state=0,1`.
 - `required`: Set to `true` to see only versions that have been marked as mandatory. Set `false` to exclude mandatory versions. Omit filter to see all versions.
 - `search`: Searches the full text of the version number, release notes, and download URL fields to find matches. This requires Switchblade 1.1.0 or newer and can be detected using the `VERSION_KEYWORD_SEARCH` [feature flag](#feature-flags).
+- `creatorId`: Limits returned versions to those created by the specified user. This does not take shortcut creator into account. This requires Switchblade 1.2.0 or newer and can be detected using the `CREATOR_ID_FILTER` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}/version/latest`
 Gets the details for the latest version available for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.
@@ -515,6 +612,8 @@ Switchblade and the UpdateKit API work around this by using the filters availabl
 No other gallery currently provides this functionality.
 
 # Multi-User Support
+
+***Full multi-user support is available in Switchblade v1.2.0 and higher. The following information is only relevant if you are running an older version of Switchblade.***
 
 If you would like to have collaborators on your Switchblade server, it is possible to add more users. Be aware that this is not the primary intended use of the software, and there are currently no access controls available to prevent collaborators from having total control over the shortcuts on your server. Make sure you fully trust anyone you give access.
 

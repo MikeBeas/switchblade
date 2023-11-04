@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const enforce = require('express-sslify');
+const { applyUserPermissions } = require('./middleware/permissions');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -11,6 +12,8 @@ app.use(express.text());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
 app.use(cors());
+app.use(applyUserPermissions);
+
 if (process.env.NODE_ENV !== "local") app.use(enforce.HTTPS({ trustProtoHeader: true }));
 app.set('json spaces', 4);
 

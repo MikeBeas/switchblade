@@ -4,10 +4,11 @@ const { isAuthorized, getUserFromToken } = require('../services/SecurityService'
 
 module.exports.getAllShortcuts = async (req, res) => {
   const authenticated = await isAuthorized(req);
+  const userId = authenticated ? getUserFromToken(req)?.id ?? null : null;
   const filters = req.query;
 
   try {
-    const shortcuts = await ShortcutService.getAllShortcuts(authenticated, filters);
+    const shortcuts = await ShortcutService.getAllShortcuts(authenticated, filters, { userId, permissions: req.userPermissions });
     return res.send({ shortcuts })
   } catch (e) {
     return res.status(HTTP.BAD_REQUEST).send({ message: e.message });
@@ -44,7 +45,7 @@ module.exports.modifyShortcut = async (req, res) => {
 
   try {
     await ShortcutService.modifyShortcut(shortcutId, req.body);
-    const shortcut = await ShortcutService.getShortcut(shortcutId, true);
+    const shortcut = await ShortcutService.getShortcut(shortcutId, true); // user is already authenticated before reaching here
 
     return res.send({ shortcut })
   } catch (e) {

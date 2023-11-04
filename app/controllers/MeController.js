@@ -1,4 +1,4 @@
-const UserService = require('../services/UserService')
+const UserService = require('../services/MeService')
 const SecurityService = require('../services/SecurityService');
 const { HTTP } = require('../constants');
 

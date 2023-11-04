@@ -1,10 +1,10 @@
 {
   "name": "switchblade",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Distribution platform for iOS Shortcuts",
   "main": "index.js",
   "engines": {
-    "node": "19.x",
+    "node": "20.x",
     "npm": "9.x"
   },
   "scripts": {

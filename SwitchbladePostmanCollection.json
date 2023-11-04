@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c79123a3-2ecc-4984-bc1a-1c8976831562",
+		"_postman_id": "0166407c-3ffa-4e30-8ce8-0f2db66b5735",
 		"name": "Switchblade",
 		"description": "Collection of APIs available in Switchblade.\n\nSet up your Postman environment with these variables:\n\n- `username`: Your Switchblade username.\n- `password`: Your Switchblade password.\n- `token`: This will be populated automatically for you. You can leave it blank.\n- `host`: The domain of your Switchblade server (no trailing slash).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -23,9 +23,6 @@
 						}
 					],
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -566,7 +563,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts?deleted&state&search",
+							"raw": "{{host}}/shortcuts?deleted&state&search&creatorId",
 							"host": [
 								"{{host}}"
 							],
@@ -588,6 +585,11 @@
 									"key": "search",
 									"value": null,
 									"description": "String. Filter shortcuts by shortcut name, headline, and description."
+								},
+								{
+									"key": "creatorId",
+									"value": null,
+									"description": "Number. Limits results to versions created by the specified user."
 								}
 							]
 						},
@@ -757,7 +759,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state&search",
+							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state&search&creatorId",
 							"host": [
 								"{{host}}"
 							],
@@ -791,6 +793,11 @@
 									"key": "search",
 									"value": null,
 									"description": "String. Filters versions by version number, change log, and download URL."
+								},
+								{
+									"key": "creatorId",
+									"value": null,
+									"description": "Number. Limits results to versions created by the specified user."
 								}
 							]
 						},
@@ -930,6 +937,199 @@
 				}
 			],
 			"description": "APIs related to the shortcut version object."
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/users?deleted=&search=",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "deleted",
+									"value": "",
+									"description": "Boolean. True to show only deleted users. False to exclude them. Omit filter to see all."
+								},
+								{
+									"key": "search",
+									"value": ""
+								}
+							]
+						},
+						"description": "Returns a list of all users."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/users/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"1"
+							]
+						},
+						"description": "Gets the record for a single user."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"TestUser\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"description": "This API allows the current user to create a new user."
+					},
+					"response": []
+				},
+				{
+					"name": "Edit User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"TestUser123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/users/5",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"5"
+							]
+						},
+						"description": "Allows editing an existing user with new metadata."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Autocomplete",
+			"item": [
+				{
+					"name": "Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/autocomplete/users?search=User",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"autocomplete",
+								"users"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "User"
+								}
+							]
+						},
+						"description": "Searches for users with a username matching the search term and returns a minimal user record. Designed for use in user search fields. This route does not require permission to view the user list since it does not return more than the public usernames and IDs of the users."
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"auth": {

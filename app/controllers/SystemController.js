@@ -1,12 +1,40 @@
 const { query, format } = require('../database/query');
 const { HTTP } = require('../constants');
-const { hashPassword } = require('../services/SecurityService');
+const { hashPassword, isAuthorized, getUserFromToken } = require('../services/SecurityService');
+const { formatPermissionsForDisplay } = require('../utilities/permissions');
+const { version, production } = require('../../config/sys');
+
+module.exports.getRoot = async (req, res) => {
+  const authenticated = await isAuthorized(req);
+  const user = authenticated ? getUserFromToken(req, true) : { id: null, username: null };
+  user.permissions = req.userPermissions;
+
+  return res.send({
+    api: {
+      host: req.headers.host,
+      production,
+      authenticated,
+      user
+    },
+    switchblade: {
+      version
+    },
+    features: {
+      MULTI_STEP_MFA: true,
+      SHORTCUT_KEYWORD_SEARCH: true,
+      VERSION_KEYWORD_SEARCH: true,
+      USER_PERMISSIONS: true,
+      CREATOR_ID_FILTER: true
+    },
+    permissions: formatPermissionsForDisplay()
+  })
+}
 
 module.exports.setup = async (req, res) => {
   const foundUsers = await query(`SELECT user_id FROM users LIMIT 1`);
 
   if (foundUsers.length > 0) {
-    return res.status(HTTP.BAD_REQUEST).send({ message: 'Switchblade has already been setup. You cannot run the setup again.', success: false })
+    return res.status(HTTP.BAD_REQUEST).send({ message: 'Switchblade has already been set up. You cannot run the setup again.', success: false })
   }
 
   const { username, password } = req.body;
@@ -17,11 +45,11 @@ module.exports.setup = async (req, res) => {
 
   const password_hash = await hashPassword(password);
 
-  const sql = format(`INSERT INTO users SET ?;`, { username, password_hash });
+  const sql = format(`INSERT INTO users SET ?;`, { username, password_hash, is_owner: true });
 
   const result = await query(sql);
 
-  return res.send({ message: `A new user with username "${username}" was created. The user ID is ${result.insertId}. You have setup your Switchblade server. This function will no longer be available.`, success: true })
+  return res.send({ message: `A new user with username "${username}" was created. The user ID is ${result.insertId}. You have set up your Switchblade server. This function will no longer be available.`, success: true })
 }
 
 module.exports.generatePasswordHash = async (req, res) => {

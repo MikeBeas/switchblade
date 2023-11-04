@@ -4,6 +4,7 @@ const tokenHandler = require('jsonwebtoken');
 const { authenticator } = require('otplib');
 const { HTTP, AUTH, LINE } = require('../constants');
 const { query } = require('../database/query');
+const { getUserPermissionsTemplate, flattenPermissions, formatPermissionsForDisplay } = require('../utilities/permissions');
 
 const TOKEN_HEADER_PREFIX = "Bearer ";
 
@@ -15,8 +16,8 @@ const userIsDeleted = async (userId) => {
   return user?.user_deleted ? true : false;
 }
 
-module.exports.encrypt = (value) => encryption.encrypt(value)
-module.exports.decrypt = (value) => encryption.decrypt(value)
+module.exports.encrypt = (value) => encryption.encrypt(value);
+module.exports.decrypt = (value) => encryption.decrypt(value);
 
 const validateMfa = async (req, username) => {
   const { body: { otp } } = req;
@@ -65,7 +66,7 @@ module.exports.login = async (req) => {
   } = req;
 
   if ((!username || !password) && !authorization) {
-    throw new Error("Username and password are required.");
+    throw new Error("Username and password are required");
   }
 
   if (authorization) {
@@ -79,7 +80,7 @@ module.exports.login = async (req) => {
   }
 
   const hashedPassword = Buffer.from(user['password_hash'], 'base64').toString();
-  const passwordVerified = await argon2.verify(hashedPassword, password, { type: argon2.argon2id })
+  const passwordVerified = await argon2.verify(hashedPassword, password, { type: argon2.argon2id });
 
   if (!passwordVerified) {
     throw new Error(AUTH.LOGIN_FAILED);
@@ -165,6 +166,36 @@ module.exports.isAuthorized = async (req, tokenType = "auth") => {
   }
 }
 
+module.exports.calculateUserPermissions = (row, forDisplay = false) => {
+  const { is_owner = false, user_permissions = {} } = row;
+  const template = flattenPermissions(getUserPermissionsTemplate());
+
+  const merged = {
+    ...template,
+    ...user_permissions ?? {}
+  }
+
+  const formatted = formatPermissionsForDisplay(merged, is_owner);
+
+  return forDisplay ? formatted : flattenPermissions(formatted, is_owner);
+}
+
+module.exports.getUserPermissions = async (req, forDisplay = false) => {
+  try {
+    const userData = this.getUserFromToken(req);
+
+    if (!userData?.id) {
+      throw new Error("No user ID");
+    }
+
+    const row = await query(`SELECT user_permissions, is_owner FROM users WHERE user_id = :userId:`, { userId: userData.id }, { returnFirst: true });
+
+    return this.calculateUserPermissions(row);
+  } catch {
+    return forDisplay ? getUserPermissionsTemplate() : flattenPermissions(getUserPermissionsTemplate());
+  }
+}
+
 module.exports.unauthorized = (res) => {
   return res.status(HTTP.NOT_AUTHORIZED).send({ message: AUTH.UNAUTHORIZED });
 }
@@ -181,10 +212,13 @@ const getTokenFromRequest = (req) => {
   }
 }
 
-module.exports.getUserFromToken = (req) => {
+module.exports.getUserFromToken = (req, returnNullOnEmpty = false) => {
   const token = getTokenFromRequest(req);
   if (!token) {
-    throw new Error(AUTH.NOT_AUTHORIZED);
+    if (returnNullOnEmpty) {
+      return null;
+    }
+    throw new Error(AUTH.UNAUTHORIZED);
   }
   const { data } = tokenHandler.decode(token, process.env.JWT_KEY);
   return data;

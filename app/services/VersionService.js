@@ -1,6 +1,7 @@
-const { VERSION_STATUS, VERSION_STATUS_LABELS, FILTER_BOOL, PLATFORMS, SHORTCUT_STATUS, VERSION_DEFAULTS } = require('../constants');
+const { VERSION_STATUS, VERSION_STATUS_LABELS, FILTER_BOOL, PLATFORMS, SHORTCUT_STATUS, VERSION_DEFAULTS, PERMISSIONS } = require('../constants');
 const { format, query } = require('../database/query');
 const { removeUndefined, cleanString } = require('../utilities/common');
+const { userCanAccessShortcut } = require('./ShortcutService');
 
 module.exports.formatVersion = (row = {}) => ({
   version: row.version_number,
@@ -15,7 +16,11 @@ module.exports.formatVersion = (row = {}) => ({
   },
   deleted: row.version_deleted ? true : false,
   required: row.version_required ? true : false,
-  prerelease: row.version_is_prerelease ? true : false
+  prerelease: row.version_is_prerelease ? true : false,
+  creator: {
+    id: row.version_created_by,
+    name: row.username
+  }
 });
 
 const checkMinimumSystem = (systemValue) => {
@@ -73,6 +78,27 @@ const validateVersionData = (versionData = {}, updating = false) => {
   return updating ? removeUndefined(returnData) : returnData;
 }
 
+module.exports.userCanAccessShortcutVersion = async (userId, permissions, shortcutId, versionNumber) => {
+  const version = await this.getVersion(shortcutId, versionNumber, true);
+  const { state, deleted, creator } = version;
+
+  if (!await userCanAccessShortcut(userId, permissions, shortcutId)) {
+    return false;
+  }
+
+  if (userId) {
+    if (creator.id === userId) {
+      return true;
+    }
+
+    if ((state.value === VERSION_STATUS.DRAFT || deleted) && !permissions[PERMISSIONS.VIEW_DRAFT_VERSIONS_FOR_ANY_SHORTCUT]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 module.exports.createVersion = async (shortcutId, versionData, userId) => {
   const validated = validateVersionData(versionData);
 
@@ -85,7 +111,7 @@ module.exports.createVersion = async (shortcutId, versionData, userId) => {
   return result.insertId;
 }
 
-module.exports.getVersion = async (shortcutId, version, authenticated = false, filters = {},) => {
+module.exports.getVersion = async (shortcutId, version, authenticated = false, filters = {}, config = {}) => {
   const getLatest = version === "latest";
   const getByVersionNumber = getLatest ? '' : 'AND v.version_number = :version:';
 
@@ -100,15 +126,23 @@ module.exports.getVersion = async (shortcutId, version, authenticated = false, f
       // do not include prerelease unless explicitly asked for it
       filterArray.push(`AND version_is_prerelease = FALSE`)
     }
+
+    if (!config.permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {
+      filterArray.push(`AND (shortcut_created_by = :currentUserId: OR (shortcut_state = ${SHORTCUT_STATUS.PUBLISHED} AND shortcut_deleted = false))`);
+    }
+
+    if (!config.permissions[PERMISSIONS.VIEW_DRAFT_VERSIONS_FOR_ANY_SHORTCUT]) {
+      filterArray.push(`AND (version_created_by = :currentUserId: OR version_state = ${SHORTCUT_STATUS.PUBLISHED} AND version_deleted = false)`);
+    }
   }
 
   const filterString = filterArray.join(" ");
 
   const deleted = authenticated ? '' : 'AND v.version_deleted = false AND v.version_state = :versionPublished: AND s.shortcut_deleted = false AND s.shortcut_state = :shortcutPublished:';
 
-  const sql = `SELECT v.* FROM shortcuts s JOIN shortcut_versions v USING (shortcut_id) WHERE v.shortcut_id = :shortcutId: ${getByVersionNumber} ${filterString} ${deleted} ORDER BY v.version_id DESC LIMIT 1;`;
+  const sql = `SELECT v.*, u.username FROM shortcuts s JOIN shortcut_versions v USING (shortcut_id) JOIN users u ON u.user_id = v.version_created_by WHERE v.shortcut_id = :shortcutId: ${getByVersionNumber} ${filterString} ${deleted} ORDER BY v.version_id DESC LIMIT 1;`;
 
-  const row = await query(sql, { shortcutId, version, versionPublished: VERSION_STATUS.PUBLISHED, shortcutPublished: SHORTCUT_STATUS.PUBLISHED, platformVersion: filters?.platformVersion }, { returnFirst: true });
+  const row = await query(sql, { shortcutId, version, versionPublished: VERSION_STATUS.PUBLISHED, shortcutPublished: SHORTCUT_STATUS.PUBLISHED, platformVersion: filters?.platformVersion, currentUserId: config.userId }, { returnFirst: true });
 
   if (!row) {
     throw new Error("Could not find the requested version");
@@ -117,10 +151,10 @@ module.exports.getVersion = async (shortcutId, version, authenticated = false, f
   return this.formatVersion(row);
 }
 
-module.exports.getHistory = async (shortcutId, authenticated = false, filters = {}) => {
+module.exports.getHistory = async (shortcutId, authenticated = false, filters = {}, config = {}) => {
   if (!authenticated) {
     filters = {
-      deleted: "false",
+      deleted: false,
       state: `${VERSION_STATUS.PUBLISHED}`
     }
   }
@@ -168,9 +202,25 @@ module.exports.getHistory = async (shortcutId, authenticated = false, filters = 
     queryFilters.push(`(version_number LIKE :search: OR release_notes LIKE :search: OR download_url LIKE :search:)`);
   }
 
+  if (filters?.creatorId) {
+    filterValues.creatorId = filters.creatorId;
+
+    queryFilters.push(`version_created_by = :creatorId:`);
+  }
+
+  if (!config.permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {
+    queryFilters.push(`(shortcut_created_by = :currentUserId: OR (shortcut_state = ${SHORTCUT_STATUS.PUBLISHED} AND shortcut_deleted = false))`);
+  }
+
+  if (!config.permissions[PERMISSIONS.VIEW_DRAFT_VERSIONS_FOR_ANY_SHORTCUT]) {
+    queryFilters.push(`(version_created_by = :currentUserId: OR version_state = ${SHORTCUT_STATUS.PUBLISHED} AND version_deleted = false)`);
+  }
+
+  filterValues.currentUserId = config.userId;
+
   const filterString = queryFilters.length > 0 ? `AND ${queryFilters.join(" AND ")}` : '';
 
-  const sql = `SELECT v.* FROM shortcuts s JOIN shortcut_versions v USING (shortcut_id) WHERE v.shortcut_id = :shortcutId: ${filterString} ORDER BY v.version_id DESC;`;
+  const sql = `SELECT v.*, u.username FROM shortcuts s JOIN shortcut_versions v USING (shortcut_id) JOIN users u ON u.user_id = v.version_created_by WHERE v.shortcut_id = :shortcutId: ${filterString} ORDER BY v.version_id DESC;`;
 
   const rows = await query(sql, filterValues);
 

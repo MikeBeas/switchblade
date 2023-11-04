@@ -57,7 +57,7 @@ const boot = async () => {
 
     console.log(LINE)
     console.log(`Running in ${config.production ? 'production' : 'development'} mode`)
-    console.log(`Switchblade is ready to use`);
+    console.log(`Switchblade v${config.version} is ready to use`);
     console.log(`Starting ${totalCPUs} workers...`);
     console.log(LINE)
 

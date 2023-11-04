@@ -1,4 +1,4 @@
-const { SHORTCUT_STATUS, SHORTCUT_STATUS_LABELS, FILTER_BOOL, SHORTCUT_DEFAULTS } = require('../constants');
+const { SHORTCUT_STATUS, SHORTCUT_STATUS_LABELS, FILTER_BOOL, SHORTCUT_DEFAULTS, PERMISSIONS } = require('../constants');
 const { format, query } = require('../database/query');
 const { removeUndefined, cleanString } = require('../utilities/common');
 
@@ -12,7 +12,11 @@ module.exports.formatShortcut = (row = {}) => ({
     value: row.shortcut_state,
     label: SHORTCUT_STATUS_LABELS[row.shortcut_state] ?? "Unknown"
   },
-  deleted: row.shortcut_deleted ? true : false
+  deleted: row.shortcut_deleted ? true : false,
+  creator: {
+    id: row.shortcut_created_by,
+    name: row.username
+  }
 });
 
 const validateShortcutData = (shortcutData = {}, updating = false) => {
@@ -46,10 +50,27 @@ const validateShortcutData = (shortcutData = {}, updating = false) => {
   return updating ? removeUndefined(returnData) : returnData;
 }
 
+module.exports.userCanAccessShortcut = async (userId, permissions, shortcutId) => {
+  const shortcut = await this.getShortcut(shortcutId, true);
+  const { state, deleted, creator } = shortcut;
+
+  if (userId) {
+    if (creator.id === userId) {
+      return true;
+    }
+
+    if ((state.value === SHORTCUT_STATUS.DRAFT || deleted) && !permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 module.exports.getShortcut = async (shortcutId, authenticated = false) => {
   const deleted = authenticated ? '' : 'AND shortcut_deleted = false AND shortcut_state = :published:';
 
-  const sql = `SELECT * FROM shortcuts WHERE shortcut_id = :shortcutId: ${deleted};`;
+  const sql = `SELECT s.*, u.username FROM shortcuts s JOIN users u ON (u.user_id = s.shortcut_created_by) WHERE shortcut_id = :shortcutId: ${deleted};`;
   const row = await query(sql, { shortcutId, published: SHORTCUT_STATUS.PUBLISHED }, { returnFirst: true });
 
   if (!row) {
@@ -59,10 +80,10 @@ module.exports.getShortcut = async (shortcutId, authenticated = false) => {
   return this.formatShortcut(row);
 }
 
-module.exports.getAllShortcuts = async (authenticated = false, filters = {}) => {
+module.exports.getAllShortcuts = async (authenticated = false, filters = {}, config = {}) => {
   if (!authenticated) {
     filters = {
-      deleted: "false",
+      deleted: false,
       state: `${SHORTCUT_STATUS.PUBLISHED}`
     }
   }
@@ -98,9 +119,20 @@ module.exports.getAllShortcuts = async (authenticated = false, filters = {}) => 
     queryFilters.push(`(shortcut_name LIKE :search: OR shortcut_headline LIKE :search: OR shortcut_description LIKE :search:)`);
   }
 
+  if (filters?.creatorId) {
+    filterValues.creatorId = filters.creatorId;
+
+    queryFilters.push(`shortcut_created_by = :creatorId:`);
+  }
+
+  if (!config.permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {
+    queryFilters.push(`(shortcut_created_by = :currentUserId: OR (shortcut_state = ${SHORTCUT_STATUS.PUBLISHED} AND shortcut_deleted = false))`);
+    filterValues.currentUserId = config.userId;
+  }
+
   const filterString = queryFilters.length > 0 ? `WHERE ${queryFilters.join(" AND ")}` : '';
 
-  const sql = `SELECT * FROM shortcuts ${filterString};`;
+  const sql = `SELECT s.*, u.username FROM shortcuts s JOIN users u ON (u.user_id = s.shortcut_created_by) ${filterString};`;
   const rows = await query(sql, filterValues);
 
   return (rows ?? []).map(this.formatShortcut);

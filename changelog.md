@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.2.0 (2023-10-04)
+
+### Security Notice!
+This update will grant owner-level access to the user your database with the user ID `1`. There is almost certainly no situation in which this user is not your main user, since multi-user access was not officially supported yet.
+
+However, if you have manually added more users to your database, ensure that the first user who was added to your database is your administrator. The two fields to pay attention to are the new `is_owner` and `user_permissions` fields in the `users` table. If you need to copy these values from the user with ID `1` to a different user, do so immediately after starting your Switchblade server after the update, and be sure to reset those values to their defaults on the old user once you have copied them to the correct administrator.
+
+In the future, the `is_owner` field will be used to apply new permissions to your owner user, so these manual changes will not be necessary.
+
+### Node Version Updated to v20
+This version of Switchblade specifies Node v20 and npm v10 in package.json. It should still run on v19, but v19 is no longer under maintenance. Node v20 is now the LTS version.
+
+### Multi-User Support and Permissioning System
+- Added the ability to get the identity of other users
+  - Use the new `GET /users` endpoint to list the users on your Switchblade server
+    - This endpoint supports several filters. You can learn more in the README.
+  - Use the new `GET /users/{userId}` endpoint to fetch a different user's identity
+  - Only the owner of the Switchblade server can view this data by default, but other users can be granted access to it.
+- Added the ability to add new users
+  - Use the new `POST /users` endpoint to create users
+- Added permissions system for managing what users are allowed to do
+  - Use the new `PATCH /users/{userId}` endpoint to manage a user, including updating their username, password, and permissions. Only the owner of the Switchblade server will have access to these tools by default, but permission to access the tools can be granted to other users.
+  - See what permissions are available using the `GET /` endpoint, which now includes a template of all permissions grouped into categories.
+- At this time there is no granular control for allowing users to have admin access to specific shortcuts that they don't own. Users can manage shortcuts/versions they created, and users with the appropriate permission can manage *all* shortcuts or versions.
+- Support for more granular control (i.e., allowing the owner of a shortcut to designate a collaborator for that one shortcut so that they can modify it or its versions) is being considered for a future update, but is not guaranteed.
+- A new `creatorId` filter has been added to the relevant endpoints for finding shortcuts and versions created by a specific user
+- A new `/autocomplete/users` endpoint has been added for getting user-search autocomplete results
+
+### Chores
+- Added user identity API to Postman collection and README
+- Added user list API to Postman collection and README
+- Added user creation API to Postman collection and README
+- Added user modification API to Postman collection and README
+- Added permissions template API to Postman collection and README
+- Added user autocomplete API to Postman collection and README
+- Added `creatorId` parameter to relevant endpoints in Postman collection and README
+- Updated dependencies
+
 ## v1.1.0 (2023-05-20)
 
 This release is accompanied by the release of the [Switchblade SDK](https://github.com/MikeBeas/switchblade-sdk), a JavaScript/TypeScript package that makes it easy to interact with Switchblade servers.
