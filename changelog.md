@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.1 (2024-02-13)
+
+### Dependency Update
+This version includes the latest version of the app's dependencies.
+
+### NPM Version Actually Updated
+The previous change log said that `package.json` had been updated to specify npm v10. However, this change was missing. It has been made in this version.
+
 ## v1.2.0 (2023-10-04)
 
 ### Security Notice!

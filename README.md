@@ -629,7 +629,7 @@ To remove a user, you can either delete their row from the `users` table (not re
 
 Anyone is free to build a UI on top of the Switchblade backend, and distribute that UI in any way they want, including for money. Below you will find some things to keep in mind when building a UI.
 
-- When designing your login screen, remember that MFA is optional and must be submitted at the same time as the username and password
+- When designing your login screen, remember that MFA is optional and must be submitted at the same time as the username and password on Switchblade v1.0.0. Newer versions of Switchblade support MFA as a second step where applicable.
 - You should consider supporting the following pages at minimum:
   - Login
   - Setup (where you can submit a username and password to generate the first user on the server)

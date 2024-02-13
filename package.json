@@ -1,17 +1,17 @@
 {
   "name": "switchblade",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Distribution platform for iOS Shortcuts",
   "main": "index.js",
   "engines": {
     "node": "20.x",
-    "npm": "9.x"
+    "npm": "10.x"
   },
   "scripts": {
     "dev": "NODE_ENV=local nodemon",
     "start": "node index.js",
     "lint": "eslint .",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -24,20 +24,20 @@
   },
   "homepage": "https://github.com/MikeBeas/switchblade#readme",
   "dependencies": {
-    "argon2": "^0.30.2",
+    "argon2": "^0.31.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.3",
     "express": "^4.18.2",
     "express-sslify": "^1.2.0",
-    "jsonwebtoken": "^9.0.0",
-    "mysql2": "^2.3.3",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.9.1",
     "otplib": "^12.0.1",
-    "qrcode": "^1.5.1",
+    "qrcode": "^1.5.3",
     "simple-encryptor": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.30.0",
-    "husky": "^8.0.2",
-    "nodemon": "^2.0.20"
+    "eslint": "^8.56.0",
+    "husky": "^9.0.10",
+    "nodemon": "^3.0.3"
   }
 }
