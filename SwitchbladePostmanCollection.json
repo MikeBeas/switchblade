@@ -719,7 +719,8 @@
 								"exec": [
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -727,7 +728,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts/1/version/2.0",
+							"raw": "{{host}}/shortcuts/1/version/2.0?sinceVersion",
 							"host": [
 								"{{host}}"
 							],
@@ -736,6 +737,13 @@
 								"1",
 								"version",
 								"2.0"
+							],
+							"query": [
+								{
+									"key": "sinceVersion",
+									"value": null,
+									"description": "String. When this is included, the response will include an array of versions that have come between the specified version in the endpoint and the latest version."
+								}
 							]
 						},
 						"description": "Gets the record for a single shortcut version."
@@ -751,7 +759,8 @@
 								"exec": [
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -759,7 +768,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state&search&creatorId",
+							"raw": "{{host}}/shortcuts/1/history?deleted&required&prerelease&state&search&creatorId&sinceVersion=",
 							"host": [
 								"{{host}}"
 							],
@@ -798,6 +807,11 @@
 									"key": "creatorId",
 									"value": null,
 									"description": "Number. Limits results to versions created by the specified user."
+								},
+								{
+									"key": "sinceVersion",
+									"value": "",
+									"description": "String. When this is included, the response will include an array of versions that have come between the user's current version and the latest version."
 								}
 							]
 						},
@@ -814,7 +828,8 @@
 								"exec": [
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -822,7 +837,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/shortcuts/1/version/latest?platform=&platformVersion=&prerelease=",
+							"raw": "{{host}}/shortcuts/1/version/latest?platform=&platformVersion=&prerelease=&sinceVersion=",
 							"host": [
 								"{{host}}"
 							],
@@ -847,6 +862,11 @@
 									"key": "prerelease",
 									"value": "",
 									"description": "Boolean. True allows pre-release versions to be shown. Set to false or omit to hide pre-release versions."
+								},
+								{
+									"key": "sinceVersion",
+									"value": "",
+									"description": "String. When this is included, the response will include an array of versions that have come between the user's current version and the latest version."
 								}
 							]
 						},

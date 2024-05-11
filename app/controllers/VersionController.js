@@ -12,7 +12,14 @@ module.exports.getVersion = async (req, res) => {
   try {
     const shortcut = await ShortcutService.getShortcut(shortcutId, authenticated);
     const version = await VersionService.getVersion(shortcutId, versionNumber, authenticated, filters, { userId: user?.id, permissions: req.userPermissions });
-    return res.send({ shortcut, version })
+
+    const response = { shortcut, version };
+
+    if (filters.sinceVersion) {
+      response.versions = await VersionService.getHistory(shortcutId, authenticated, filters, { userId: user?.id, permissions: req.userPermissions });
+    }
+
+    return res.send(response)
   } catch (e) {
     return res.status(HTTP.BAD_REQUEST).send({ message: e.message });
   }
