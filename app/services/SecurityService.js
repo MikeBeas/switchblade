@@ -29,7 +29,7 @@ const validateMfa = async (req, username) => {
   try {
     const valid = authenticator.check(otp, decryptedSecret);
     if (!valid) throw new Error(AUTH.LOGIN_FAILED);
-  } catch (e) {
+  } catch {
     console.log()
     console.log(LINE)
     console.log('MFA secret decryption failed.\nIf your encryption key recently changed, you may need to disable MFA for all users and have them re-enable it.')
@@ -225,6 +225,6 @@ module.exports.getUserFromToken = (req, returnNullOnEmpty = false) => {
 }
 
 module.exports.hashPassword = async (password) => {
-  const hash = await argon2.hash(password, { type: argon2.argon2id });
+  const hash = await argon2.hash(password);
   return Buffer.from(hash, 'utf-8').toString('base64');
 }

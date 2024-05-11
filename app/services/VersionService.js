@@ -153,10 +153,8 @@ module.exports.getVersion = async (shortcutId, version, authenticated = false, f
 
 module.exports.getHistory = async (shortcutId, authenticated = false, filters = {}, config = {}) => {
   if (!authenticated) {
-    filters = {
-      deleted: false,
-      state: `${VERSION_STATUS.PUBLISHED}`
-    }
+    filters.deleted = false;
+    filters.state = `${VERSION_STATUS.PUBLISHED}`;
   }
 
   const queryFilters = [];
@@ -206,6 +204,15 @@ module.exports.getHistory = async (shortcutId, authenticated = false, filters = 
     filterValues.creatorId = filters.creatorId;
 
     queryFilters.push(`version_created_by = :creatorId:`);
+  }
+
+  if (filters.sinceVersion) {
+    const sinceVersionIdRow = await query("SELECT version_id FROM shortcut_versions WHERE shortcut_id = :shortcutId: AND version_number = :versionNumber:", { shortcutId, versionNumber: filters.sinceVersion }, { returnFirst: true });
+
+    if (sinceVersionIdRow) {
+      queryFilters.push(`version_id > :sinceVersionId:`);
+      filterValues.sinceVersionId = sinceVersionIdRow.version_id;
+    }
   }
 
   if (!config.permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {

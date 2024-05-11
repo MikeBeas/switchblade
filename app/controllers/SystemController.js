@@ -24,7 +24,8 @@ module.exports.getRoot = async (req, res) => {
       SHORTCUT_KEYWORD_SEARCH: true,
       VERSION_KEYWORD_SEARCH: true,
       USER_PERMISSIONS: true,
-      CREATOR_ID_FILTER: true
+      CREATOR_ID_FILTER: true,
+      SINCE_VERSION_FILTER: true
     },
     permissions: formatPermissionsForDisplay()
   })

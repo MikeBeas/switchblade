@@ -540,7 +540,11 @@ Allows you to modify an existing shortcut. You can modify an of the parameters u
 ## Versions
 
 ### `GET /shortcuts/{shortcutId}/version/{versionNumber}`
-Gets a list of all versions available for a particular shortcut. Deleted shortcuts/versions and shortcuts/versions in the draft state will not be returned. When authenticated, deleted and draft shortcuts/versions are returned along with published shortcuts/versions. Note that this API uses the version number, not the version ID. Version IDs are never used in any API and only exist for internal database ordering.
+Gets a specific version of a shortcut. Note that this API uses the version number, not the version ID. Version IDs are never used in any API and only exist for internal database ordering.
+
+The following parameter can be added to the query string to filter what will be returned.
+
+- `sinceVersion`: Setting a value for this parameter will include a `versions` array in the response that includes all of the versions released after the `sinceVersion` up to the specified `versionNumber`. The `versions` array does not include the `sinceVersion`, since it is already installed. This requires Switchblade 1.3.0 or newer and can be detected using the `SINCE_VERSION_FILTER` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}/history`
 Gets a list of all available versions for a specific shortcut. When unauthenticated, draft and deleted shortcuts/versions will not be included. When authenticated, draft and deleted shortcuts/versions will return as expected.
@@ -549,10 +553,11 @@ The following parameters can be added to the query string to filter what will be
 
 - `prerelease`: Set to `true` to see only pre-release versions. Set to `false` to hide pre-release versions. Omit to see all versions.
 - `deleted`: Requires authentication. Set to `true` to show only deleted versions or shortcuts. Set to `false` to hide deleted versions or shortcuts. Omit to show all versions.
-- `state`: Specify the number value for any supported version state, such as `0` for published and `1` for draft, to see only versions in that state. Supports multiple comma-separated values, such as `?state=0,1`.
+- `state`: Requires authentication. Specify the number value for any supported version state, such as `0` for published and `1` for draft, to see only versions in that state. Supports multiple comma-separated values, such as `?state=0,1`.
 - `required`: Set to `true` to see only versions that have been marked as mandatory. Set `false` to exclude mandatory versions. Omit filter to see all versions.
 - `search`: Searches the full text of the version number, release notes, and download URL fields to find matches. This requires Switchblade 1.1.0 or newer and can be detected using the `VERSION_KEYWORD_SEARCH` [feature flag](#feature-flags).
 - `creatorId`: Limits returned versions to those created by the specified user. This does not take shortcut creator into account. This requires Switchblade 1.2.0 or newer and can be detected using the `CREATOR_ID_FILTER` [feature flag](#feature-flags).
+- `sinceVersion`: Limits returned versions to only those released after the specified version. This does not include the `sinceVersion` in the results. This requires Switchblade 1.3.0 or newer and can be detected using the `SINCE_VERSION_FILTER` [feature flag](#feature-flags).
 
 ### `GET /shortcuts/{shortcutId}/version/latest`
 Gets the details for the latest version available for a specific shortcut. When unauthenticated, draft and deleted shortcuts will return an error. When authenticated, draft and deleted shortcuts will return as expected.
@@ -562,6 +567,7 @@ The following parameters can be added to the query string to filter what will be
 - `platform`: Can be used to specify which platform the shortcut is intended to run on. Must be combined with `platformVersion` to have any effect. Possible values are `ios` and `mac`.
 - `platformVersion`: This should be a major iOS or Mac release number (i.e. 12, 13, etc.). When combined with `platform`, only the latest shortcut version compatible with that version of that operating system or higher will be returned. For example, if there are four versions of a shortcut that support iOS 12, 14, 14 again, and 16, respectively, specifying `?platform=ios&platformVersion=14` would result in the latest version that supports iOS 14 or older. In this case, the second shortcut that supports iOS 14 would be returned as the latest available for that device.
 - `prerelease`: If this is set to `true`, it will be possible to get a prerelease version as the latest available version if there is a newer prerelease version than the latest stable version. If this is not set, or is set to false, prerelease versions will not be shown as the latest. This can be combined with other filters, so you could query specifically for any version compatible with iOS 14 or older, including any potential prerelease versions.
+- `sinceVersion`: Setting a value for this parameter will include a `versions` array in the response that includes all of the versions released after the `sinceVersion` up to the latest version. The `versions` array does not include the latest version or the `sinceVersion`, since the latter is already installed and the former is already included in the payload. This does not include the specified version in the results. This requires Switchblade 1.3.0 or newer and can be detected using the `SINCE_VERSION_FILTER` [feature flag](#feature-flags).
 
 ### `POST /shortcuts/{shortcutId}/version`
 Requires authentication. Creates a new shortcut version record. The following parameters are available in the request body.

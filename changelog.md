@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.3.0 (2024-05-11)
+
+### New Filter for Shortcut History and Latest Version
+This update adds a new filter to several endpoints that can help you get a list of versions that have been released since your user last updated. When you use this filter, you will get back a `versions` array that includes previous versions of the shortcut that were released between the `sinceVersion` and the latest version.
+
+This makes it easy to surface a list of other updates that your users have missed if they are several versions behind.
+
+- Added `sinceVersion` parameter to the `GET /shortcuts/{shortcutId}/version/{versionNumber}` endpoint
+  - When used with this endpoint, the API response will include a `versions` array that includes a reverse-chronological list of all of the versions released after the `sinceVersion` and before the `versionNumber`. The `sinceVersion` will not be included in the array, but the latest version will be.
+- Added `sinceVersion` parameter to the `GET /shortcuts/{shortcutId}/version/latest` endpoint
+  - Behind the scenes, this endpoint is the same as `GET /shortcuts/{shortcutId}/version/{versionNumber}` endpoint, and simply uses `latest` as a magic string that always looks up the newest version. When the new filter is used with this endpoint, the `versions` array will include all updates that have passed since the `sinceVersion` was released. The `sinceVersion` will not be included in the array.
+- Added `sinceVersion` parameter to the `GET /shortcuts/{shortcutId}/history` endpoint
+  - When the `sinceVersion` filter is used with this endpoint, the history returned will only include versions that were released after the specified `sinceVersion`. It will not include the `sinceVersion` in the results.
+
+### Filter Behavior Correction
+Some filters were being incorrect ignored on unauthenticated requests to the `GET /shortcuts/{shortcutId}/history` endpoint. Now only the `state` and `deleted` filters will be overridden when unauthenticated. Also added a note in the README description of the `state` filter for `GET /shortcuts/{shortcutId}/history` that authentication is required, mirroring the similar filter on `GET /shortcuts`.
+
+### Dependency Update
+This version includes the latest version of the app's dependencies.
+
+### Chores
+- Updated an error in the README that used the description of the `GET /shortcuts/{shortcutId}/history` endpoint in the section about the `GET /shortcuts/{shortcutId}/version/{versionNumber}` endpoint.
+- Updated Postman collection with new filter for endpoints listed above
+- Updated README with documentation of new filter
+
 ## v1.2.1 (2024-02-13)
 
 ### Dependency Update
