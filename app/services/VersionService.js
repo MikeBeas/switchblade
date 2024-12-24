@@ -94,6 +94,10 @@ module.exports.userCanAccessShortcutVersion = async (userId, permissions, shortc
     if ((state.value === VERSION_STATUS.DRAFT || deleted) && !permissions[PERMISSIONS.VIEW_DRAFT_VERSIONS_FOR_ANY_SHORTCUT]) {
       return false;
     }
+  } else {
+    if (state.value !== VERSION_STATUS.PUBLISHED || deleted) {
+      return false;
+    }
   }
 
   return true;

@@ -1,6 +1,6 @@
 {
   "name": "switchblade",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Distribution platform for iOS Shortcuts",
   "main": "index.js",
   "engines": {
@@ -24,20 +24,20 @@
   },
   "homepage": "https://github.com/MikeBeas/switchblade#readme",
   "dependencies": {
-    "argon2": "^0.40.1",
+    "argon2": "^0.41.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "express-sslify": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.9.7",
+    "mysql2": "^3.12.0",
     "otplib": "^12.0.1",
-    "qrcode": "^1.5.3",
+    "qrcode": "^1.5.4",
     "simple-encryptor": "^4.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.2.0",
-    "husky": "^9.0.11",
-    "nodemon": "^3.1.0"
+    "eslint": "^9.17.0",
+    "husky": "^9.1.7",
+    "nodemon": "^3.1.9"
   }
 }

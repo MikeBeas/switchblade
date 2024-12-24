@@ -62,6 +62,10 @@ module.exports.userCanAccessShortcut = async (userId, permissions, shortcutId) =
     if ((state.value === SHORTCUT_STATUS.DRAFT || deleted) && !permissions[PERMISSIONS.VIEW_ANY_DRAFT_SHORTCUT]) {
       return false;
     }
+  } else {
+    if ((state.value !== SHORTCUT_STATUS.PUBLISHED || deleted)) {
+      return false;
+    }
   }
 
   return true;

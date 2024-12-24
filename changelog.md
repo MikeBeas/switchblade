@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.1 (2024-12-24)
+
+### Critical Bug Fix
+Fixes an issue where unauthenticated users were not able to access certain public information.
+
+### Dependency Update
+This version includes the latest version of the app's dependencies.
+
 ## v1.3.0 (2024-05-11)
 
 ### New Filter for Shortcut History and Latest Version

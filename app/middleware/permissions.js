@@ -57,7 +57,7 @@ const viewShortcutVersion = async (req, res, next) => {
       return next();
     }
 
-    const user = SecurityService.getUserFromToken(req);
+    const user = SecurityService.getUserFromToken(req, true);
 
     if (!await userCanAccessShortcutVersion(user?.id, req.userPermissions, req.params.shortcutId, req.params.versionNumber)) {
       throw new Error("You do not have permission to view this version")
@@ -70,7 +70,7 @@ const viewShortcutVersion = async (req, res, next) => {
 
 const getVersionHistory = async (req, res, next) => {
   try {
-    const user = SecurityService.getUserFromToken(req);
+    const user = SecurityService.getUserFromToken(req, true);
     if (!await userCanAccessShortcut(user?.id, req.userPermissions, req.params.shortcutId)) {
       throw new Error("Could not find the requested shortcut")
     }
